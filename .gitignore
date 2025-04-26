@@ -1,0 +1,16 @@
+# Dependency directories
+node_modules/
+.cache/
+dist/
+build/
+
+# Environment files
+.env
+
+# Logs
+*.log
+
+# OS and IDE files
+.DS_Store
+*.swp
+.vscode/
