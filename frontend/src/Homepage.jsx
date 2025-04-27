@@ -20,31 +20,55 @@ import {
 const { Title, Text, Paragraph } = Typography;
 const { Meta } = Card;
 
-// Popular destinations data
+// Popular destinations with consistent time data
 const popularDestinations = [
-  { 
-    id: 1, 
-    name: 'Paris', 
-    image: 'https://images.unsplash.com/photo-1499856871958-5b9627545d1a?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1470&q=80', 
-    description: 'The City of Light awaits with iconic landmarks and charming cafés.'
+  {
+    id: 1,
+    name: "Paris",
+    image: "https://images.unsplash.com/photo-1502602898657-3e91760cbb34?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60",
+    description: "Explore the city of love and discover iconic landmarks like the Eiffel Tower and Louvre Museum.",
+    timeOfDay: "Morning",
+    time: "08:00"
   },
-  { 
-    id: 2, 
-    name: 'Bali', 
-    image: 'https://images.unsplash.com/photo-1537996194471-e657df975ab4?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1738&q=80', 
-    description: 'Discover paradise with stunning beaches and vibrant culture.'
+  {
+    id: 2,
+    name: "Bali",
+    image: "https://images.unsplash.com/photo-1539367628448-4bc5c9d171c8?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60",
+    description: "Experience the perfect blend of beaches, culture, and tropical landscapes in this Indonesian paradise.",
+    timeOfDay: "Afternoon",
+    time: "14:00"
   },
-  { 
-    id: 3, 
-    name: 'Tokyo', 
-    image: 'https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1488&q=80', 
-    description: 'Experience the perfect blend of tradition and innovation.'
+  {
+    id: 3,
+    name: "Tokyo",
+    image: "https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60",
+    description: "Immerse yourself in the fascinating mix of traditional culture and futuristic technology.",
+    timeOfDay: "Evening",
+    time: "19:00"
   },
-  { 
-    id: 4, 
-    name: 'New York', 
-    image: 'https://images.unsplash.com/photo-1496442226666-8d4d0e62e6e9?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1470&q=80', 
-    description: 'The city that never sleeps offers endless adventures.'
+  {
+    id: 4,
+    name: "New York",
+    image: "https://images.unsplash.com/photo-1518391846015-55a9cc003b25?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60",
+    description: "The city that never sleeps offers endless entertainment, iconic skyscrapers, and cultural diversity.",
+    timeOfDay: "Night",
+    time: "22:00"
+  },
+  {
+    id: 5,
+    name: "Cairo",
+    image: "https://images.unsplash.com/photo-1572252009286-268acec5ca0a?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60",
+    description: "Discover ancient wonders and explore the rich history of Egypt's vibrant capital city.",
+    timeOfDay: "Morning",
+    time: "10:30"
+  },
+  {
+    id: 6,
+    name: "Sydney",
+    image: "https://images.unsplash.com/photo-1506973035872-a4ec16b8e8d9?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60",
+    description: "Experience the perfect blend of urban life and natural beauty in Australia's largest city.",
+    timeOfDay: "Afternoon",
+    time: "16:45"
   }
 ];
 
@@ -128,7 +152,7 @@ const Homepage = () => {
         }} />
         
         <div style={{ position: 'relative', zIndex: 1, textAlign: 'center', padding: '0 20px' }}>
-          <Title style={{ color: 'white', fontSize: '48px', marginBottom: '24px' }}>
+          <Title style={{ color: 'white', fontSize: '48px', marginBottom: '24px', marginTop: '20px' }} className="trip-heading">
             Discover Your Perfect Journey
           </Title>
           <Paragraph style={{ color: 'white', fontSize: '18px', maxWidth: '800px', margin: '0 auto 40px' }}>
@@ -178,67 +202,77 @@ const Homepage = () => {
       </div>
 
       {/* How It Works Section */}
-      <div style={{ padding: '60px 20px', backgroundColor: '#f5f5f5' }}>
-        <Title level={2} style={{ textAlign: 'center', marginBottom: '40px' }}>
+      <div style={{ padding: '60px 20px', backgroundColor: '#232837' }}>
+        <Title level={2} style={{ textAlign: 'center', marginBottom: '40px', color: '#ffffff' }}>
           How ChaloChalein Works
         </Title>
         
         <Row gutter={[24, 24]} justify="center" style={{ maxWidth: '1200px', margin: '0 auto' }}>
           <Col xs={24} sm={12} md={6}>
-            <Card className="how-it-works-card" bordered={false} style={{ textAlign: 'center', height: '100%' }}>
+            <Card className="how-it-works-card destination-card" bordered={false} style={{ textAlign: 'center', height: '100%' }}>
               <div style={{ fontSize: '48px', marginBottom: '16px' }}>🌍</div>
-              <Title level={4}>Choose Your Destination</Title>
-              <Text>Tell us where you want to go and when you're planning to travel.</Text>
+              <Title level={4} style={{ color: '#ffffff' }}>Choose Your Destination</Title>
+              <Text style={{ color: '#ffffff' }}>Tell us where you want to go and when you're planning to travel.</Text>
             </Card>
           </Col>
           
           <Col xs={24} sm={12} md={6}>
-            <Card className="how-it-works-card" bordered={false} style={{ textAlign: 'center', height: '100%' }}>
+            <Card className="how-it-works-card destination-card" bordered={false} style={{ textAlign: 'center', height: '100%' }}>
               <div style={{ fontSize: '48px', marginBottom: '16px' }}>✈️</div>
-              <Title level={4}>Travel Preferences</Title>
-              <Text>Share your interests, travel style, and who you're traveling with.</Text>
+              <Title level={4} style={{ color: '#ffffff' }}>Travel Preferences</Title>
+              <Text style={{ color: '#ffffff' }}>Share your interests, travel style, and who you're traveling with.</Text>
             </Card>
           </Col>
           
           <Col xs={24} sm={12} md={6}>
-            <Card className="how-it-works-card" bordered={false} style={{ textAlign: 'center', height: '100%' }}>
+            <Card className="how-it-works-card destination-card" bordered={false} style={{ textAlign: 'center', height: '100%' }}>
               <div style={{ fontSize: '48px', marginBottom: '16px' }}>🤖</div>
-              <Title level={4}>AI Generates Itinerary</Title>
-              <Text>Our AI creates a personalized day-by-day plan just for you.</Text>
+              <Title level={4} style={{ color: '#ffffff' }}>AI Generates Itinerary</Title>
+              <Text style={{ color: '#ffffff' }}>Our AI creates a personalized day-by-day plan just for you.</Text>
             </Card>
           </Col>
           
           <Col xs={24} sm={12} md={6}>
-            <Card className="how-it-works-card" bordered={false} style={{ textAlign: 'center', height: '100%' }}>
+            <Card className="how-it-works-card destination-card" bordered={false} style={{ textAlign: 'center', height: '100%' }}>
               <div style={{ fontSize: '48px', marginBottom: '16px' }}>🗺️</div>
-              <Title level={4}>Explore & Customize</Title>
-              <Text>Review your itinerary, make adjustments, and get ready for your trip!</Text>
+              <Title level={4} style={{ color: '#ffffff' }}>Explore & Customize</Title>
+              <Text style={{ color: '#ffffff' }}>Review your itinerary, make adjustments, and get ready for your trip!</Text>
             </Card>
           </Col>
         </Row>
       </div>
 
       {/* Popular Destinations */}
-      <div style={{ padding: '60px 20px' }}>
+      <div className="popular-destinations" style={{ padding: '60px 20px', backgroundColor: '#232837' }}>
         <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
-            <Title level={2} style={{ margin: 0 }}>Popular Destinations</Title>
-            <Button type="link" onClick={() => navigate('/chatbot')}>
+            <Title level={2} style={{ margin: 0, color: '#ffffff' }}>Popular Destinations</Title>
+            <Button type="link" style={{ color: '#6c63ff' }} onClick={() => navigate('/chatbot')}>
               View All <ArrowRightOutlined />
             </Button>
           </div>
           
           <Row gutter={[24, 24]}>
             {popularDestinations.map(destination => (
-              <Col xs={24} sm={12} md={6} key={destination.id}>
-                <Card
+              <Col xs={24} sm={12} md={8} key={destination.id}>
+                <Card 
+                  className="popular-destination-card"
                   hoverable
-                  cover={<img alt={destination.name} src={destination.image} style={{ height: '200px', objectFit: 'cover' }} />}
+                  cover={
+                    <div className="destination-img-container">
+                      <img alt={destination.name} src={destination.image} />
+                      <div className={`time-badge time-${destination.timeOfDay.toLowerCase()}`}>
+                        <span className="time">{destination.time}</span>
+                        <span className="period">{destination.timeOfDay}</span>
+                      </div>
+                    </div>
+                  }
                   onClick={() => startPlanning(destination.name)}
                 >
                   <Meta 
                     title={destination.name} 
                     description={destination.description} 
+                    className="destination-meta"
                   />
                 </Card>
               </Col>
@@ -248,19 +282,23 @@ const Homepage = () => {
       </div>
 
       {/* Travel Experiences */}
-      <div style={{ padding: '60px 20px', backgroundColor: '#f5f5f5' }}>
+      <div style={{ padding: '60px 20px', backgroundColor: '#181c24' }}>
         <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
-          <Title level={2} style={{ textAlign: 'center', marginBottom: '40px' }}>
+          <Title level={2} style={{ textAlign: 'center', marginBottom: '40px', color: '#ffffff' }}>
             Discover Experiences
           </Title>
           
           <Row gutter={[24, 24]}>
             {travelExperiences.map(experience => (
               <Col xs={24} sm={12} md={6} key={experience.id}>
-                <Card bordered={false} style={{ textAlign: 'center', height: '100%' }}>
+                <Card 
+                  className="destination-card"
+                  bordered={false} 
+                  style={{ textAlign: 'center', height: '100%', borderRadius: '12px', overflow: 'hidden' }}
+                >
                   <div style={{ fontSize: '48px', marginBottom: '16px' }}>{experience.icon}</div>
-                  <Title level={4}>{experience.title}</Title>
-                  <Text>{experience.description}</Text>
+                  <Title level={4} style={{ color: '#ffffff' }}>{experience.title}</Title>
+                  <Text style={{ color: '#ffffff' }}>{experience.description}</Text>
                 </Card>
               </Col>
             ))}

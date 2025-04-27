@@ -2,8 +2,11 @@ from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Optional, Dict, Any
-from chatbot import TravelChatbot
-from utils.api_helpers import get_weather_forecast
+import sys
+import os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
+from pblproject.components.chatbot import TravelChatbot
+from pblproject.utils.api_helpers import get_weather_forecast
 
 app = FastAPI()
 

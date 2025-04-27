@@ -10,7 +10,7 @@ import {
   EnvironmentOutlined, CalendarOutlined, CarOutlined, 
   HeartOutlined, RocketOutlined, EditOutlined,
   PlusOutlined, CloudOutlined, CompassOutlined,
-  MessageOutlined
+  MessageOutlined, SendOutlined, CustomerServiceOutlined
 } from '@ant-design/icons';
 import MapComponent from '../MapComponent';
 
@@ -442,8 +442,16 @@ const TravelPlanner = () => {
   };
 
   // Chat message handler
-  const handleHelpMessage = async (message) => {
-    const newMessage = { role: 'user', content: message };
+  const handleHelpMessage = async (messageOrEvent) => {
+    // Check if no message content or if input is empty
+    if (!helpInput.trim() && typeof messageOrEvent !== 'string') {
+      return;
+    }
+    
+    // Get message content (either from parameter or from input state)
+    const messageContent = typeof messageOrEvent === 'string' ? messageOrEvent : helpInput;
+    
+    const newMessage = { role: 'user', content: messageContent };
     setHelpMessages(prev => [...prev, newMessage]);
     setIsProcessing(true);
 
@@ -483,7 +491,7 @@ const TravelPlanner = () => {
           },
           {
             role: "user",
-            content: message
+            content: messageContent
           }
         ],
         temperature: 0.7,
@@ -724,11 +732,7 @@ const TravelPlanner = () => {
                       <List.Item>
                         <List.Item.Meta
                           avatar={
-                            <Avatar style={{ 
-                              backgroundColor: getActivityColor(activity.time),
-                              color: '#fff',
-                              fontWeight: 'bold'
-                            }}>
+                            <Avatar className={`time-badge time-${getTimePeriod(activity.time)}`}>
                               {activity.time.split(':')[0]}
                             </Avatar>
                           }
@@ -761,10 +765,10 @@ const TravelPlanner = () => {
           
           <div className="itinerary-actions" style={{ marginTop: '24px' }}>
             <Space>
-              <Button type="primary" onClick={() => saveItinerary()}>Save Itinerary</Button>
-              <Button icon={<PlusOutlined />}>Add Activity</Button>
-              <Button onClick={() => shareItinerary()}>Share</Button>
-              <Button onClick={() => printItinerary()}>Print</Button>
+              <Button type="primary" className="save-itinerary" onClick={() => saveItinerary()}>Save Itinerary</Button>
+              <Button icon={<PlusOutlined />} className="add-activity">Add Activity</Button>
+              <Button onClick={() => shareItinerary()} className="share-button">Share</Button>
+              <Button onClick={() => printItinerary()} className="print-button">Print</Button>
             </Space>
           </div>
         </div>
@@ -778,6 +782,15 @@ const TravelPlanner = () => {
       )}
     </div>
   );
+
+  // Helper function to get time period for badge classes
+  const getTimePeriod = (time) => {
+    const hour = parseInt(time.split(':')[0]);
+    if (hour < 12) return 'morning';
+    if (hour < 15) return 'lunch';
+    if (hour < 18) return 'afternoon';
+    return 'evening';
+  };
 
   // Helper function to get color based on time of day
   const getActivityColor = (time) => {
@@ -856,37 +869,25 @@ const TravelPlanner = () => {
   const renderSidebar = () => (
     <div className="planner-sidebar">
       {weatherData && (
-        <Card 
-          title={
-            <Space>
-              <CloudOutlined />
-              <span>Weather in {weatherData.location}</span>
-            </Space>
-          }
-          style={{ marginBottom: '16px' }}
-        >
-          <div className="weather-info">
-            <div className="temperature">
-              <span className="temp-value">{weatherData.current.temp}°C</span>
-            </div>
-            <div className="condition">
-              <Text>{weatherData.current.conditions}</Text>
-            </div>
+        <div className="weather-card">
+          <div className="weather-icon">
+            <CloudOutlined style={{ fontSize: '2rem' }} />
           </div>
-        </Card>
+          <div className="weather-details">
+            <div className="weather-location">{weatherData.location}</div>
+            <div className="temp">{weatherData.current.temp}°C</div>
+            <div className="conditions">{weatherData.current.conditions}</div>
+          </div>
+        </div>
       )}
       
       {locations.length > 0 && (
-        <Card 
-          title={
-            <Space>
-              <CompassOutlined />
-              <span>Suggested Locations</span>
-            </Space>
-          }
-          style={{ marginBottom: '16px' }}
-        >
-          <div style={{ height: '200px', marginBottom: '16px' }}>
+        <div className="map-container">
+          <div style={{ marginBottom: '1rem', fontWeight: 'bold', fontSize: '1.1rem' }}>
+            <CompassOutlined style={{ marginRight: '0.5rem' }} />
+            Suggested Locations
+          </div>
+          <div className="map">
             <MapComponent 
               locations={locations.map(loc => ({
                 name: loc.name,
@@ -895,42 +896,140 @@ const TravelPlanner = () => {
               center={[locations[0].position[0], locations[0].position[1]]}
             />
           </div>
-          
-          <List
-            size="small"
-            dataSource={locations}
-            renderItem={location => (
-              <List.Item>
-                <Text>{location.name}</Text>
-              </List.Item>
-            )}
-          />
-        </Card>
-      )}
-      
-      <Card title="Trip Summary" className="sidebar-card">
-        <div className="trip-summary-info">
-          <p><strong>Destination:</strong> {formData.destination || 'Not selected'}</p>
-          <p><strong>Dates:</strong> {formData.startDate && formData.endDate ? 
-            `${formData.startDate.format('MMM D')} - ${formData.endDate.format('MMM D, YYYY')}` : 
-            'Not selected'}
-          </p>
-          <p><strong>Duration:</strong> {duration} days</p>
-          <p><strong>Transportation:</strong> {
-            transportationOptions.find(o => o.value === formData.transportation)?.label || 'Not selected'
-          }</p>
-          <p><strong>Traveling with:</strong> {
-            companionOptions.find(o => o.value === formData.companions)?.label || 'Not selected'
-          }</p>
-          <p><strong>Interests:</strong> {
-            formData.interests.length > 0 ? 
-              formData.interests.map(i => interestOptions.find(o => o.value === i)?.label).join(', ') : 
-              'None selected'
-          }</p>
         </div>
-      </Card>
+      )}
+
+      <div className="trip-summary-card">
+        <h2>Trip Summary</h2>
+        
+        <div className="trip-info-item">
+          <div className="trip-info-label">Destination:</div>
+          <div className="trip-info-value">{formData.destination}</div>
+        </div>
+        
+        <div className="trip-info-item">
+          <div className="trip-info-label">Dates:</div>
+          <div className="trip-info-value">
+            {formData.startDate.format('MMM D')} - {formData.endDate.format('MMM D, YYYY')}
+          </div>
+        </div>
+        
+        <div className="trip-info-item">
+          <div className="trip-info-label">Duration:</div>
+          <div className="trip-info-value">{duration} days</div>
+        </div>
+        
+        <div className="trip-info-item">
+          <div className="trip-info-label">Transportation:</div>
+          <div className="trip-info-value">
+            {transportationOptions.find(opt => opt.value === formData.transportation)?.label || formData.transportation}
+          </div>
+        </div>
+        
+        <div className="trip-info-item">
+          <div className="trip-info-label">Traveling with:</div>
+          <div className="trip-info-value">
+            {companionOptions.find(opt => opt.value === formData.companions)?.label || formData.companions}
+          </div>
+        </div>
+        
+        {formData.interests.length > 0 && (
+          <div className="trip-info-item">
+            <div className="trip-info-label">Interests:</div>
+            <div className="trip-info-value">
+              {formData.interests.map(interest => {
+                const interestOption = interestOptions.find(opt => opt.value === interest);
+                return (
+                  <Tag key={interest} style={{ marginBottom: '0.5rem' }}>
+                    {interestOption?.icon} {interestOption?.label}
+                  </Tag>
+                );
+              })}
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
+
+  // Render chat
+  const renderChat = () => {
+    return (
+      <>
+        <div 
+          className="floating-chat-button" 
+          onClick={() => setIsChatOpen(true)}
+        >
+          <Button type="primary" shape="circle" icon={<CustomerServiceOutlined className="chat-icon" />} />
+          <span className="chat-label">Ask me</span>
+        </div>
+
+        <Modal
+          title={
+            <div className="chat-modal-header">
+              <div className="chat-modal-title">Travel Assistant</div>
+            </div>
+          }
+          open={isChatOpen}
+          onCancel={() => setIsChatOpen(false)}
+          footer={null}
+          className="chat-modal"
+          width={400}
+          style={{ top: 20 }}
+          bodyStyle={{ padding: 0, height: '500px', display: 'flex', flexDirection: 'column' }}
+        >
+          <div className="chat-messages">
+            {helpMessages.length === 0 ? (
+              <div className="welcome-message">
+                <div className="welcome-icon">✨</div>
+                <div>
+                  <p>Hi there! I'm your personal travel assistant.</p>
+                  <p>Let me help you plan your trip to {formData.destination || 'your dream destination'}.</p>
+                  <p className="welcome-time">{new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+                </div>
+              </div>
+            ) : (
+              helpMessages.map((msg, index) => (
+                <div 
+                  key={index} 
+                  className={`chat-message ${msg.role === 'user' ? 'user-message' : 'bot-message'}`}
+                >
+                  {msg.content}
+                </div>
+              ))
+            )}
+            
+            {isProcessing && (
+              <div className="chat-message bot-message">
+                <div className="typing-indicator">
+                  <span></span>
+                  <span></span>
+                  <span></span>
+                </div>
+              </div>
+            )}
+          </div>
+          
+          <div className="chat-input">
+            <Input 
+              placeholder="Type your message..." 
+              value={helpInput} 
+              onChange={(e) => setHelpInput(e.target.value)}
+              onPressEnter={() => handleHelpMessage()}
+              disabled={isProcessing}
+            />
+            <Button 
+              type="primary" 
+              onClick={() => handleHelpMessage()}
+              disabled={isProcessing || !helpInput.trim()}
+              icon={<SendOutlined />}
+              className="send-button"
+            />
+          </div>
+        </Modal>
+      </>
+    );
+  };
 
   return (
     <div className="travel-planner">
@@ -945,193 +1044,56 @@ const TravelPlanner = () => {
         </Steps>
       </div>
 
-      <div className="planner-content">
-        <Row gutter={24}>
-          <Col xs={24} md={16}>
-            <Card className="step-card">
-              {loading && currentStep !== 4 ? (
-                <div className="loading-container" style={{ textAlign: 'center', padding: '40px' }}>
-                  <Spin size="large" />
-                  <div style={{ marginTop: '16px' }}>
-                    Loading...
-                  </div>
-                </div>
-              ) : (
-                renderStepContent()
-              )}
-              
-              <div className="step-actions">
-                <div className="step-buttons">
-                  {currentStep > 0 && (
-                    <Button 
-                      onClick={handlePrev}
-                      style={{ marginRight: '8px' }}
-                    >
-                      Previous
-                    </Button>
-                  )}
-                  
-                  {currentStep < 4 && (
-                    <Button 
-                      type="primary" 
-                      onClick={handleNext}
-                      disabled={!isStepValid()}
-                    >
-                      {currentStep === 3 ? 'Generate Itinerary' : 'Next'}
-                    </Button>
-                  )}
+      <div className="travel-planner-layout">
+        {/* Main content area */}
+        <div className="planner-main">
+          <div className="step-card" style={{ backgroundColor: '#333333', borderRadius: '12px', padding: '1.5rem' }}>
+            {loading && currentStep !== 4 ? (
+              <div className="loading-container" style={{ textAlign: 'center', padding: '40px' }}>
+                <Spin size="large" />
+                <div style={{ marginTop: '16px', color: '#ffffff' }}>
+                  Loading...
                 </div>
               </div>
-            </Card>
-          </Col>
-          
-          <Col xs={24} md={8}>
-            {renderSidebar()}
-          </Col>
-        </Row>
-      </div>
-
-      {/* Floating Chat Button */}
-      <div className="floating-chat-button" onClick={() => setIsChatOpen(true)}>
-        <Button type="primary" shape="circle" size="large">
-          <MessageOutlined />
-        </Button>
-      </div>
-
-      {/* Chat Modal */}
-      <Modal
-        title="Travel Assistant"
-        open={isChatOpen}
-        onCancel={() => setIsChatOpen(false)}
-        footer={null}
-        width={400}
-        style={{ top: 20 }}
-      >
-        <div className="chat-container">
-          <div className="chat-messages" style={{ 
-            height: '300px', 
-            overflowY: 'auto',
-            padding: '16px',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '16px'
-          }}>
-            {helpMessages.map((message, index) => (
-              <div key={index} className={`message ${message.role}`} style={{
-                maxWidth: '80%',
-                display: 'flex',
-                justifyContent: message.role === 'user' ? 'flex-end' : 'flex-start'
-              }}>
-                <div className="message-bubble" style={{
-                  background: message.role === 'user' ? '#1890ff' : '#f0f0f0',
-                  color: message.role === 'user' ? '#fff' : '#000',
-                  padding: '12px 16px',
-                  borderRadius: '16px',
-                  maxWidth: '80%',
-                  position: 'relative',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px'
-                }}>
-                  <div className="message-content" style={{
-                    fontSize: '14px',
-                    lineHeight: '1.5'
-                  }}>
-                    {message.content}
-                  </div>
-                  <div className="message-tail" style={{
-                    position: 'absolute',
-                    width: 0,
-                    height: 0,
-                    borderStyle: 'solid',
-                    display: 'block',
-                    content: '""',
-                    top: '12px',
-                    left: message.role === 'user' ? 'auto' : '0',
-                    right: message.role === 'user' ? '0' : 'auto',
-                    borderColor: message.role === 'user' ? 'transparent #1890ff transparent transparent' : 'transparent #f0f0f0 transparent transparent',
-                    borderWidth: '6px'
-                  }}></div>
-                </div>
-              </div>
-            ))}
-            {isProcessing && (
-              <div className="message assistant" style={{
-                maxWidth: '80%',
-                display: 'flex',
-                justifyContent: 'flex-start'
-              }}>
-                <div className="message-bubble" style={{
-                  background: '#f0f0f0',
-                  color: '#000',
-                  padding: '12px 16px',
-                  borderRadius: '16px',
-                  maxWidth: '80%',
-                  position: 'relative',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px'
-                }}>
-                  <Spin size="small" style={{ marginRight: '8px' }} />
-                  <div className="message-content" style={{
-                    fontSize: '14px',
-                    lineHeight: '1.5'
-                  }}>
-                    Thinking...
-                  </div>
-                  <div className="message-tail" style={{
-                    position: 'absolute',
-                    width: 0,
-                    height: 0,
-                    borderStyle: 'solid',
-                    display: 'block',
-                    content: '""',
-                    top: '12px',
-                    left: '0',
-                    right: 'auto',
-                    borderColor: 'transparent #f0f0f0 transparent transparent',
-                    borderWidth: '6px'
-                  }}></div>
-                </div>
-              </div>
+            ) : (
+              renderStepContent()
             )}
-          </div>
-          <div className="chat-input" style={{
-            padding: '16px',
-            borderTop: '1px solid #f0f0f0'
-          }}>
-            <div className="input-container" style={{
-              display: 'flex',
-              gap: '8px'
-            }}>
-              <Input.TextArea
-                value={helpInput}
-                onChange={(e) => setHelpInput(e.target.value)}
-                onPressEnter={(e) => {
-                  e.preventDefault();
-                  if (helpInput.trim()) {
-                    handleHelpMessage(helpInput);
-                  }
-                }}
-                placeholder="Ask me anything about your trip!"
-                rows={2}
-                style={{ borderRadius: '16px', padding: '12px' }}
-              />
-              <Button
-                type="primary"
-                onClick={() => {
-                  if (helpInput.trim()) {
-                    handleHelpMessage(helpInput);
-                  }
-                }}
-                style={{ borderRadius: '16px', marginLeft: '8px' }}
-              >
-                Send
-              </Button>
+            
+            <div className="step-actions">
+              <div className="step-buttons">
+                {currentStep > 0 && (
+                  <Button 
+                    onClick={handlePrev}
+                    style={{ marginRight: '8px' }}
+                    className="prev-button"
+                  >
+                    Previous
+                  </Button>
+                )}
+                
+                {currentStep < 4 && (
+                  <Button 
+                    type="primary" 
+                    onClick={handleNext}
+                    disabled={!isStepValid()}
+                    className="next-button"
+                  >
+                    {currentStep === 3 ? 'Generate Itinerary' : 'Next'}
+                  </Button>
+                )}
+              </div>
             </div>
           </div>
         </div>
-      </Modal>
+        
+        {/* Sidebar area */}
+        <div className="planner-sidebar">
+          {renderSidebar()}
+        </div>
+      </div>
+
+      {/* Chat */}
+      {renderChat()}
     </div>
   );
 };
