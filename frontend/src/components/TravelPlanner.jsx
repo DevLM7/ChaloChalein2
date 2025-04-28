@@ -1,11 +1,15 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import axios from 'axios';
+
+const GROQ_API_URL = process.env.REACT_APP_GROQ_API_URL || 'http://localhost:5000/api';
+const GROQ_API_KEY = process.env.REACT_APP_GROQ_API_KEY || '';
+
 import { 
   Steps, Form, DatePicker, Button, Card, Row, Col, 
   Input, Radio, Tag, Spin, message, Typography, Tabs, 
   List, Space, Avatar, Modal
 } from 'antd';
 import dayjs from 'dayjs';
-import axios from 'axios';
 import { 
   EnvironmentOutlined, CalendarOutlined, CarOutlined, 
   HeartOutlined, RocketOutlined, EditOutlined,
@@ -13,17 +17,7 @@ import {
   MessageOutlined, SendOutlined, CustomerServiceOutlined
 } from '@ant-design/icons';
 import MapComponent from '../MapComponent';
-
-// Foursquare API constants
-const FOURSQUARE_API_URL = 'https://api.foursquare.com/v3';
-const FOURSQUARE_API_KEY = process.env.REACT_APP_FOURSQUARE_API_KEY;
-
-// Backend API constants
-const BACKEND_API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
-
-// GROQ API constants
-const GROQ_API_URL = 'https://api.groq.com/openai/v1';
-const GROQ_API_KEY = process.env.REACT_APP_GROQ_API_KEY;
+import { getWeather, searchLocations, getRoute, getGroqResponse } from '../utils/api';
 
 // Destructure Typography components
 const { Title, Text, Paragraph } = Typography;
@@ -88,68 +82,28 @@ const TravelPlanner = () => {
     { label: 'Friends', value: 'friends', icon: '👥' }
   ];
 
-  // Check for API keys
-  const checkApiKeys = useCallback(() => {
-    if (!GROQ_API_KEY) {
-      message.error("GROQ API key not found. Please configure your API keys.");
-      return false;
-    }
-    
-    if (!FOURSQUARE_API_KEY) {
-      message.error("Foursquare API key not found. Please configure your API keys.");
-      return false;
-    }
-    
-    return true;
-  }, []);
-
   const fetchWeatherData = useCallback(async () => {
     try {
       setLoading(true);
       console.log('Fetching weather for:', formData.destination);
       
-      // Call backend API which handles the weather API call
-      const response = await axios.get(`${BACKEND_API_URL}/api/weather`, {
-        params: new URLSearchParams({
-          city: formData.destination
-        })
-      });
+      const data = await getWeather(formData.destination);
+      console.log('Weather data:', data);
       
-      console.log('Backend response:', response.data);
-      
-      if (response.data.error) {
-        throw new Error(response.data.error);
-      }
-      
-      // Process the weather data
       const processedData = {
-        location: response.data.location,
+        location: data.location,
         current: { 
-          temp: response.data.temperature,
-          conditions: response.data.description,
-          icon: '' // We might want to add weather icon mapping in the backend
+          temp: data.temperature,
+          conditions: data.description,
+          icon: data.icon || ''
         },
-        forecast: [] // WeatherAPI requires a different endpoint for forecasts
+        forecast: data.forecast || []
       };
       
       setWeatherData(processedData);
     } catch (error) {
-      console.error('Error fetching weather:', {
-        message: error.message,
-        status: error.response?.status,
-        data: error.response?.data,
-        config: error.config
-      });
-      
-      let errorMessage = 'Could not fetch weather data.';
-      if (error.response) {
-        errorMessage += ` Status: ${error.response.status}`;
-        if (error.response.data?.detail) {
-          errorMessage += ` Error: ${error.response.data.detail}`;
-        }
-      }
-      
-      message.error(errorMessage);
+      console.error('Error fetching weather:', error);
+      message.error('Could not fetch weather data');
       
       // Fallback data
       setWeatherData({
@@ -168,35 +122,24 @@ const TravelPlanner = () => {
     } finally {
       setLoading(false);
     }
-  }, [formData.destination, setLoading]);
+  }, [formData.destination]);
 
   // Fetch location suggestions
   const fetchLocationSuggestions = useCallback(async () => {
-    if (!checkApiKeys()) return; // Check API key before proceeding
-    
     try {
       setLoading(true);
       
-      // Direct API call to Foursquare
-      const response = await axios.get(`${FOURSQUARE_API_URL}/places/search`, {
-        params: {
-          query: formData.destination,
-          limit: 10
-        },
-        headers: {
-          'Authorization': FOURSQUARE_API_KEY
-        }
-      });
+      const data = await searchLocations(formData.destination);
+      console.log('Location data:', data);
       
-      // Process the locations data
-      const processedLocations = response.data.results.map(place => ({
-        id: place.fsq_id,
-        name: place.name,
-        address: place.location.address || 'No address available',
-        category: place.categories[0]?.name || 'Attraction',
-        position: [place.geocodes.main.latitude, place.geocodes.main.longitude],
-        rating: place.rating || 4.0,
-        photo: place.photos?.[0]?.prefix + 'original' + place.photos?.[0]?.suffix || 'https://via.placeholder.com/150'
+      const processedLocations = data.locations.map(location => ({
+        id: location.id,
+        name: location.name,
+        address: location.address,
+        category: location.category || 'Attraction',
+        position: { lat: location.position.lat, lng: location.position.lng },
+        rating: location.rating || 4.0,
+        photo: location.photo || 'https://via.placeholder.com/150'
       }));
       
       setLocations(processedLocations);
@@ -214,181 +157,54 @@ const TravelPlanner = () => {
           position: [51.505, -0.09],
           rating: 4.5,
           photo: 'https://via.placeholder.com/150'
-        },
-        {
-          id: 'place2',
-          name: 'Popular Restaurant',
-          address: formData.destination,
-          category: 'Restaurant',
-          position: [51.51, -0.1],
-          rating: 4.2,
-          photo: 'https://via.placeholder.com/150'
-        },
-        {
-          id: 'place3',
-          name: 'Popular Hotel',
-          address: formData.destination,
-          category: 'Hotel',
-          position: [51.515, -0.08],
-          rating: 4.7,
-          photo: 'https://via.placeholder.com/150'
         }
       ]);
     } finally {
       setLoading(false);
     }
-  }, [formData.destination, checkApiKeys]);
+  }, [formData.destination]);
 
   // Generate itinerary
   const generateItinerary = useCallback(async () => {
-    if (!checkApiKeys()) return; // Check API key before proceeding
-    
     try {
       setLoading(true);
       
-      // Direct API call to GROQ
-      const response = await axios.post(`${GROQ_API_URL}/chat/completions`, {
-        model: "llama3-70b-8192",
-        messages: [
-          {
-            role: "system",
-            content: "You are a travel planning assistant. Create a detailed day-by-day itinerary based on the user's preferences."
-          },
-          {
-            role: "user",
-            content: `Create a detailed ${duration}-day itinerary for ${formData.destination}. 
-            Travel dates: ${formData.startDate.format('YYYY-MM-DD')} to ${formData.endDate.format('YYYY-MM-DD')}.
-            Transportation: ${formData.transportation}.
-            Traveling as: ${formData.companions}.
-            Interests: ${formData.interests.join(', ')}.
-            Additional notes: ${formData.notes || 'None'}.
-            
-            Format the response as a JSON object with the following structure:
-            {
-              "destination": "City name",
-              "days": [
-                {
-                  "day": 1,
-                  "date": "YYYY-MM-DD",
-                  "activities": [
-                    {
-                      "time": "09:00",
-                      "activity": "Visit attraction",
-                      "description": "Short description",
-                      "category": "sightseeing/food/shopping/etc",
-                      "location": {
-                        "name": "Name of place",
-                        "address": "Address",
-                        "coordinates": [latitude, longitude]
-                      }
-                    }
-                  ]
-                }
-              ]
-            }`
-          }
-        ],
-        temperature: 0.7,
-        max_tokens: 4000
-      }, {
-        headers: {
-          'Authorization': `Bearer ${GROQ_API_KEY}`,
-          'Content-Type': 'application/json'
+      const messages = [
+        {
+          role: "system",
+          content: "You are a travel planning assistant. Create a very detailed and rich itinerary based on the user's preferences. Include specific meal details (e.g., breakfast at a local cafe, lunch at a renowned restaurant), exact locations, times, and activity descriptions. Respond ONLY in STRICTLY VALID JSON format with double quotes for all property names and string values, no trailing commas, and no extra text outside the JSON object. The JSON structure should be: { \"days\": [ { \"day\": number, \"date\": string, \"activities\": [ { \"time\": string, \"description\": string, \"location\": { \"name\": string } } ] } ] }"
+        },
+        {
+          role: "user",
+          content: `Create a ${duration}-day itinerary for ${formData.destination} with the following preferences:
+            - Transportation: ${formData.transportation}
+            - Traveling with: ${formData.companions}
+            - Interests: ${formData.interests.join(', ')}
+            - Notes: ${formData.notes}`
         }
-      });
+      ];
       
-      // Process the itinerary data
-      let itineraryData;
-      try {
-        const content = response.data.choices[0].message.content;
-        // Extract JSON from the response if needed
-        const jsonMatch = content.match(/```json\n([\s\S]*?)\n```/) || content.match(/\{[\s\S]*\}/);
-        const jsonString = jsonMatch ? jsonMatch[1] || jsonMatch[0] : content;
-        itineraryData = JSON.parse(jsonString);
-      } catch (parseError) {
-        console.error('Error parsing itinerary JSON:', parseError);
-        throw new Error('Could not parse itinerary data');
+      const response = await getGroqResponse(messages);
+      let parsedResponse = response;
+      if (typeof response === 'string') {
+        try {
+          parsedResponse = JSON.parse(response);
+        } catch (e) {
+          console.error('Failed to parse itinerary JSON:', e);
+          console.error('Raw response:', response);
+          message.error('Failed to parse itinerary response. Please try again.');
+          parsedResponse = null;
+        }
       }
-      
-      setItinerary(itineraryData);
-      setCurrentStep(4); // Move to itinerary step
-      message.success('Your personalized itinerary is ready!');
+      setItinerary(parsedResponse);
+      setCurrentStep(4); // Move to itinerary step after generation
     } catch (error) {
       console.error('Error generating itinerary:', error);
       message.error('Could not generate itinerary');
-      
-      // Fallback itinerary
-      const fallbackItinerary = {
-        destination: formData.destination,
-        days: Array(duration).fill().map((_, i) => ({
-          day: i + 1,
-          date: formData.startDate.add(i, 'day').format('YYYY-MM-DD'),
-          activities: [
-            {
-              time: '09:00',
-              activity: 'Breakfast at local cafe',
-              description: 'Start your day with a delicious breakfast',
-              category: 'food',
-              location: {
-                name: 'Local Cafe',
-                address: formData.destination,
-                coordinates: [51.505, -0.09]
-              }
-            },
-            {
-              time: '11:00',
-              activity: 'Visit main attraction',
-              description: 'Explore the most popular attraction',
-              category: 'sightseeing',
-              location: {
-                name: 'Main Attraction',
-                address: formData.destination,
-                coordinates: [51.51, -0.1]
-              }
-            },
-            {
-              time: '13:30',
-              activity: 'Lunch at recommended restaurant',
-              description: 'Enjoy local cuisine',
-              category: 'food',
-              location: {
-                name: 'Popular Restaurant',
-                address: formData.destination,
-                coordinates: [51.515, -0.08]
-              }
-            },
-            {
-              time: '15:00',
-              activity: 'Afternoon activity',
-              description: 'Relax and enjoy the local atmosphere',
-              category: formData.interests[0] || 'relaxation',
-              location: {
-                name: 'Local Spot',
-                address: formData.destination,
-                coordinates: [51.52, -0.11]
-              }
-            },
-            {
-              time: '19:00',
-              activity: 'Dinner and evening entertainment',
-              description: 'End your day with a nice dinner',
-              category: 'food',
-              location: {
-                name: 'Evening Venue',
-                address: formData.destination,
-                coordinates: [51.525, -0.09]
-              }
-            }
-          ]
-        }))
-      };
-      
-      setItinerary(fallbackItinerary);
-      setCurrentStep(4); // Still move to itinerary step with fallback data
     } finally {
       setLoading(false);
     }
-  }, [formData.destination, formData.startDate, formData.endDate, formData.interests, formData.transportation, formData.companions, formData.notes, duration, checkApiKeys]);
+  }, [formData, duration]);
 
   // Effect to fetch weather and locations when search is initiated
   useEffect(() => {
@@ -504,7 +320,7 @@ const TravelPlanner = () => {
       });
 
       // Get the response from GROQ
-      const finalResponse = response.data.choices[0].message.content;
+      const finalResponse = response.data.content;
 
       // Add a small delay for a more natural feel
       await new Promise(resolve => setTimeout(resolve, 500));
@@ -713,7 +529,7 @@ const TravelPlanner = () => {
       <Title level={4}>Your Personalized Itinerary for {formData.destination}</Title>
       <Paragraph>Here's your day-by-day plan based on your preferences.</Paragraph>
       
-      {itinerary ? (
+      {itinerary && itinerary.days && Array.isArray(itinerary.days) ? (
         <div className="itinerary-container">
           <Tabs defaultActiveKey="0" tabPosition="left">
             {itinerary.days.map((day, index) => (
@@ -891,9 +707,9 @@ const TravelPlanner = () => {
             <MapComponent 
               locations={locations.map(loc => ({
                 name: loc.name,
-                position: [loc.position[0], loc.position[1]]
+                position: loc.position
               }))}
-              center={[locations[0].position[0], locations[0].position[1]]}
+              center={[locations[0].position.lat, locations[0].position.lng]}
             />
           </div>
         </div>
@@ -976,7 +792,7 @@ const TravelPlanner = () => {
           className="chat-modal"
           width={400}
           style={{ top: 20 }}
-          bodyStyle={{ padding: 0, height: '500px', display: 'flex', flexDirection: 'column' }}
+          styles={{ body: { padding: 0, height: '500px', display: 'flex', flexDirection: 'column' } }}
         >
           <div className="chat-messages">
             {helpMessages.length === 0 ? (
