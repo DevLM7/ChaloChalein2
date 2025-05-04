@@ -128,7 +128,7 @@ function AppContent() {
         <div>
           <div className="footer-logo">
             <span className="header-logo">
-              ChaloChalein
+              {/* Removed English "ChaloChalein" text as per user request */}
               <span className="hindi-logo">चलो चलें</span>
             </span>
           </div>

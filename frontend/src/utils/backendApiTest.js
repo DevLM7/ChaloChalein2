@@ -1,7 +1,7 @@
 // Backend API Connection Test Utility
 import axios from 'axios';
 
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
 // Test backend connection
 export const testBackendConnection = async () => {
@@ -22,10 +22,10 @@ export const testBackendConnection = async () => {
 };
 
 // Test weather API endpoint
-export const testWeatherEndpoint = async () => {
+export const testWeatherEndpoint = async (city = 'London') => {
   try {
-    const response = await axios.post(`${API_URL}/weather/test`, {
-      apiKey: process.env.REACT_APP_WEATHER_API
+    const response = await axios.get(`${API_URL}/weather`, {
+      params: { city }
     });
     return {
       success: true,

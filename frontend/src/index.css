@@ -42,6 +42,58 @@ body {
   data-theme: "dark";
 }
 
+/* Scoped blue pressed effect for travel mode and companion buttons */
+.travel-mode-group .ant-radio-button-wrapper-checked,
+.companion-group .ant-radio-button-wrapper-checked {
+  background: linear-gradient(135deg, #096dd9, #1890ff) !important;
+  color: white !important;
+  box-shadow: 0 2px 8px rgba(24, 144, 255, 0.4) !important;
+  border-color: #1890ff !important;
+  font-weight: 600 !important;
+}
+
+.travel-mode-group .ant-radio-button-wrapper-checked:hover,
+.companion-group .ant-radio-button-wrapper-checked:hover {
+  background: linear-gradient(135deg, #1890ff, #40a9ff) !important;
+  box-shadow: 0 4px 12px rgba(24, 144, 255, 0.6) !important;
+  border-color: #40a9ff !important;
+}
+
+.travel-mode-group .ant-radio-button-wrapper-checked:active,
+.companion-group .ant-radio-button-wrapper-checked:active {
+  background: linear-gradient(135deg, #0747a6, #096dd9) !important;
+  box-shadow: 0 1px 6px rgba(24, 144, 255, 0.3) !important;
+  border-color: #096dd9 !important;
+}
+
+/* Ensure unselected Radio.Buttons have default styling */
+.ant-radio-button-wrapper {
+  transition: all 0.3s ease;
+}
+
+/* Light theme adjustments */
+body[data-theme="light"] .travel-mode-group .ant-radio-button-wrapper-checked,
+body[data-theme="light"] .companion-group .ant-radio-button-wrapper-checked {
+  background: linear-gradient(135deg, #4a6cf7, #3b57d2) !important;
+  color: white !important;
+  box-shadow: 0 2px 8px rgba(74, 108, 247, 0.4) !important;
+  border-color: #3b57d2 !important;
+}
+
+body[data-theme="light"] .travel-mode-group .ant-radio-button-wrapper-checked:hover,
+body[data-theme="light"] .companion-group .ant-radio-button-wrapper-checked:hover {
+  background: linear-gradient(135deg, #3b57d2, #5a7df7) !important;
+  box-shadow: 0 4px 12px rgba(74, 108, 247, 0.6) !important;
+  border-color: #5a7df7 !important;
+}
+
+body[data-theme="light"] .travel-mode-group .ant-radio-button-wrapper-checked:active,
+body[data-theme="light"] .companion-group .ant-radio-button-wrapper-checked:active {
+  background: linear-gradient(135deg, #2c3bbd, #4a6cf7) !important;
+  box-shadow: 0 1px 6px rgba(74, 108, 247, 0.3) !important;
+  border-color: #4a6cf7 !important;
+}
+
 /* Card styling with theme support */
 .card, div[class*="card"], [class*="Card"] {
   background-color: var(--color-bg-card) !important;
@@ -490,6 +542,18 @@ code {
   padding: 0.75rem 1rem;
 }
 
+/* Fix textarea font color in Additional Notes input in dark mode */
+[data-theme="dark"] .step-content textarea {
+  color: #e0e0e0 !important;
+}
+
+/* More specific fix for Ant Design TextArea in Additional Notes in dark mode */
+[data-theme="dark"] .step-content .ant-input-textarea textarea {
+  color: #fffcfc !important;
+  background-color: #222222 !important;
+  border-color: #444444 !important;
+}
+
 [data-theme="light"] .card input,
 [data-theme="light"] .card select,
 [data-theme="light"] .card textarea {
@@ -500,6 +564,12 @@ code {
 [data-theme="dark"] .card select,
 [data-theme="dark"] .card textarea {
   background-color: rgba(255, 255, 255, 0.1);
+  color: #e0e0e0 !important;
+}
+
+/* Additional interests input text color fix in dark mode */
+[data-theme="dark"] .trip-summary-card .trip-info-value {
+  color: #e0e0e0 !important;
 }
 
 .card input::placeholder,
@@ -732,6 +802,13 @@ div[class*="destination-card"]:hover,
 
 [data-theme="dark"] .trip-summary-card {
   background-color: #333333 !important;
+}
+
+/* Fix interest tags color in trip summary card in dark theme */
+[data-theme="dark"] .trip-summary-card .trip-info-value .ant-tag {
+  background-color: #555555 !important;
+  color: #e0e0e0 !important;
+  border: none !important;
 }
 
 .trip-summary-card h2 {
@@ -1044,6 +1121,71 @@ div[class*="destination-card"]:hover,
 
 [data-theme="light"] .weather-card {
   background-color: #f1f5f9 !important;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1) !important;
+  color: var(--color-text) !important;
+  font-weight: 700 !important;
+  font-family: 'Inter', 'Segoe UI', Arial, sans-serif !important;
+  border-radius: 16px !important;
+  padding: 20px !important;
+  margin-bottom: 20px !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 1.5rem !important;
+  transition: transform 0.3s ease, box-shadow 0.3s ease !important;
+}
+
+[data-theme="light"] .weather-card > div,
+[data-theme="light"] .weather-card > div > div,
+[data-theme="light"] .weather-card .weather-location,
+[data-theme="light"] .weather-card .temp,
+[data-theme="light"] .weather-card .conditions {
+  color: var(--color-text) !important;
+  font-weight: 700 !important;
+  font-family: 'Inter', 'Segoe UI', Arial, sans-serif !important;
+  opacity: 1 !important;
+}
+
+[data-theme="light"] .weather-card > div {
+  color: var(--color-text) !important;
+  font-weight: 700 !important;
+  font-family: 'Inter', 'Segoe UI', Arial, sans-serif !important;
+}
+
+[data-theme="light"] .weather-card > div > div {
+  color: var(--color-text) !important;
+  font-weight: 700 !important;
+  font-family: 'Inter', 'Segoe UI', Arial, sans-serif !important;
+}
+
+[data-theme="light"] .weather-card .weather-location {
+  color: var(--color-text) !important;
+  font-weight: 700 !important;
+  font-family: 'Inter', 'Segoe UI', Arial, sans-serif !important;
+}
+
+[data-theme="light"] .weather-card .temp {
+  color: var(--color-text) !important;
+  font-weight: 700 !important;
+  font-family: 'Inter', 'Segoe UI', Arial, sans-serif !important;
+}
+
+[data-theme="light"] .weather-card .conditions {
+  color: var(--color-text) !important;
+  opacity: 1 !important;
+  font-weight: 700 !important;
+  font-family: 'Inter', 'Segoe UI', Arial, sans-serif !important;
+}
+
+[data-theme="light"] .weather-location {
+  color: #1e293b !important;
+}
+
+[data-theme="light"] .temp {
+  color: #111827 !important;
+}
+
+[data-theme="light"] .conditions {
+  color: #4b5563 !important;
 }
 
 [data-theme="light"] .weather-icon {
@@ -2875,6 +3017,33 @@ body[data-theme="dark"] {
   transition: color 0.3s ease !important;
 }
 
+body[data-theme="dark"] .header-link {
+  color: #e0e0e0 !important;
+}
+
+body[data-theme="dark"] .header-link:hover {
+  color: #6c63ff !important;
+}
+
+body[data-theme="dark"] .header-link.active {
+  color: #ffffff !important;
+  background-color: #6c63ff !important;
+  border-radius: 0.5rem;
+}
+
+body[data-theme="dark"] .header-link svg {
+  color: #e0e0e0 !important;
+  vertical-align: middle;
+}
+
+body[data-theme="dark"] .header-link:hover svg {
+  color: #6c63ff !important;
+}
+
+body[data-theme="dark"] .header-link.active svg {
+  color: #ffffff !important;
+}
+
 .theme-toggle {
   margin-left: 20px;
 }
@@ -3258,6 +3427,34 @@ body[data-theme="dark"] {
   display: flex;
   align-items: center;
   gap: 16px;
+}
+
+/* Make Next and Previous buttons same size in Travel Planner */
+.prev-button {
+  width: 120px !important;
+  height: 40px !important;
+  font-size: 16px !important;
+}
+
+.next-button {
+  width: 80px !important;
+  height: 28px !important;
+  font-size: 12px !important;
+  padding: 0 8px !important;
+  line-height: 24px !important;
+  margin: 0 !important;
+}
+
+.generate-itinerary-button {
+  font-size: 8px !important;
+  padding: 0 4px !important;
+  height: 20px !important;
+  min-width: 40px !important;
+}
+
+/* Hide English "ChaloChalein" text in footer */
+footer > div > div:nth-child(1) > h3 {
+  display: none !important;
 }
 
 /* Header Datetime Badge */

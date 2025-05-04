@@ -6,12 +6,7 @@ const Footer = () => {
   return (
     <footer style={{ marginTop: '2rem', padding: '2rem 0', background: 'var(--color-bg-card)', borderTop: '1px solid var(--color-border)', boxShadow: 'var(--color-shadow)' }}>
       <div style={{ maxWidth: '1200px', margin: '0 auto', display: 'flex', flexWrap: 'wrap', gap: '2rem', justifyContent: 'space-between', alignItems: 'flex-start', padding: '0 2rem' }}>
-        <div style={{ flex: '1 1 220px' }}>
-          <h3 style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--color-primary)', marginBottom: '0.5rem' }}>ChaloChalein</h3>
-          <p style={{ color: 'var(--color-text)', opacity: 0.85, fontWeight: 500 }}>
-            Your travel companion for planning, exploring, and experiencing new destinations.
-          </p>
-        </div>
+        {/* Removed English "ChaloChalein" line and description as per user request */}
         <div style={{ flex: '1 1 180px' }}>
           <h4 style={{ fontWeight: 700, marginBottom: '0.5rem', color: 'var(--color-primary)' }}>Quick Links</h4>
           <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
@@ -40,7 +35,7 @@ const Footer = () => {
         </div>
       </div>
       <div style={{ borderTop: '1px solid var(--color-border)', marginTop: '2rem', paddingTop: '1rem', textAlign: 'center', color: 'var(--color-text)', opacity: 0.7, fontWeight: 500 }}>
-        <p>&copy; {new Date().getFullYear()} ChaloChalein. All rights reserved.</p>
+        <p>&copy; {new Date().getFullYear()}. All rights reserved.</p>
       </div>
     </footer>
   );

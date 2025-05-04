@@ -1,11 +1,15 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import axios from 'axios';
+
+const GROQ_API_URL = process.env.REACT_APP_GROQ_API_URL || 'http://localhost:5000/api';
+const GROQ_API_KEY = process.env.REACT_APP_GROQ_API_KEY || '';
+
 import { 
   Steps, Form, DatePicker, Button, Card, Row, Col, 
   Input, Radio, Tag, Spin, message, Typography, Tabs, 
   List, Space, Avatar, Modal
 } from 'antd';
 import dayjs from 'dayjs';
-import axios from 'axios';
 import { 
   EnvironmentOutlined, CalendarOutlined, CarOutlined, 
   HeartOutlined, RocketOutlined, EditOutlined,
@@ -13,17 +17,7 @@ import {
   MessageOutlined, SendOutlined, CustomerServiceOutlined
 } from '@ant-design/icons';
 import MapComponent from '../MapComponent';
-
-// Foursquare API constants
-const FOURSQUARE_API_URL = 'https://api.foursquare.com/v3';
-const FOURSQUARE_API_KEY = process.env.REACT_APP_FOURSQUARE_API_KEY;
-
-// Backend API constants
-const BACKEND_API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
-
-// GROQ API constants
-const GROQ_API_URL = 'https://api.groq.com/openai/v1';
-const GROQ_API_KEY = process.env.REACT_APP_GROQ_API_KEY;
+import { getWeather, searchLocations, getRoute, getGroqResponse } from '../utils/api';
 
 // Destructure Typography components
 const { Title, Text, Paragraph } = Typography;
@@ -46,6 +40,8 @@ const TravelPlanner = () => {
   // State for API responses
   const [weatherData, setWeatherData] = useState(null);
   const [locations, setLocations] = useState([]);
+
+  const [rawResponse, setRawResponse] = useState(null);
   const [itinerary, setItinerary] = useState(null);
   const [searchInitiated, setSearchInitiated] = useState(false);
   
@@ -88,68 +84,28 @@ const TravelPlanner = () => {
     { label: 'Friends', value: 'friends', icon: '👥' }
   ];
 
-  // Check for API keys
-  const checkApiKeys = useCallback(() => {
-    if (!GROQ_API_KEY) {
-      message.error("GROQ API key not found. Please configure your API keys.");
-      return false;
-    }
-    
-    if (!FOURSQUARE_API_KEY) {
-      message.error("Foursquare API key not found. Please configure your API keys.");
-      return false;
-    }
-    
-    return true;
-  }, []);
-
   const fetchWeatherData = useCallback(async () => {
     try {
       setLoading(true);
       console.log('Fetching weather for:', formData.destination);
       
-      // Call backend API which handles the weather API call
-      const response = await axios.get(`${BACKEND_API_URL}/api/weather`, {
-        params: new URLSearchParams({
-          city: formData.destination
-        })
-      });
+      const data = await getWeather(formData.destination);
+      console.log('Weather data:', data);
       
-      console.log('Backend response:', response.data);
-      
-      if (response.data.error) {
-        throw new Error(response.data.error);
-      }
-      
-      // Process the weather data
       const processedData = {
-        location: response.data.location,
+        location: data.location,
         current: { 
-          temp: response.data.temperature,
-          conditions: response.data.description,
-          icon: '' // We might want to add weather icon mapping in the backend
+          temp: data.temperature,
+          conditions: data.description,
+          icon: data.icon || ''
         },
-        forecast: [] // WeatherAPI requires a different endpoint for forecasts
+        forecast: data.forecast || []
       };
       
       setWeatherData(processedData);
     } catch (error) {
-      console.error('Error fetching weather:', {
-        message: error.message,
-        status: error.response?.status,
-        data: error.response?.data,
-        config: error.config
-      });
-      
-      let errorMessage = 'Could not fetch weather data.';
-      if (error.response) {
-        errorMessage += ` Status: ${error.response.status}`;
-        if (error.response.data?.detail) {
-          errorMessage += ` Error: ${error.response.data.detail}`;
-        }
-      }
-      
-      message.error(errorMessage);
+      console.error('Error fetching weather:', error);
+      message.error('Could not fetch weather data');
       
       // Fallback data
       setWeatherData({
@@ -168,236 +124,102 @@ const TravelPlanner = () => {
     } finally {
       setLoading(false);
     }
-  }, [formData.destination, setLoading]);
+  }, [formData.destination]);
 
   // Fetch location suggestions
-  const fetchLocationSuggestions = useCallback(async () => {
-    if (!checkApiKeys()) return; // Check API key before proceeding
-    
-    try {
-      setLoading(true);
+  // Removed as per user request
+ const fetchLocationSuggestions = useCallback(async () => {
+   try {
+     setLoading(true);
+  
+     const data = await searchLocations(formData.destination);
+     console.log('Location data:', data);
       
-      // Direct API call to Foursquare
-      const response = await axios.get(`${FOURSQUARE_API_URL}/places/search`, {
-        params: {
-          query: formData.destination,
-          limit: 10
-        },
-        headers: {
-          'Authorization': FOURSQUARE_API_KEY
-        }
-      });
+     const processedLocations = data.locations.map(location => ({
+       id: location.id,
+       name: location.name,
+       address: location.address,
+       category: location.category || 'Attraction',
+       position: [location.position.lat, location.position.lng],
+       rating: location.rating || 4.0,
+       photo: location.photo || 'https://via.placeholder.com/150'
+     }));
       
-      // Process the locations data
-      const processedLocations = response.data.results.map(place => ({
-        id: place.fsq_id,
-        name: place.name,
-        address: place.location.address || 'No address available',
-        category: place.categories[0]?.name || 'Attraction',
-        position: [place.geocodes.main.latitude, place.geocodes.main.longitude],
-        rating: place.rating || 4.0,
-        photo: place.photos?.[0]?.prefix + 'original' + place.photos?.[0]?.suffix || 'https://via.placeholder.com/150'
-      }));
+     setLocations(processedLocations);
+   } catch (error) {
+     console.error('Error fetching locations:', error);
+     message.error('Could not fetch location suggestions');
       
-      setLocations(processedLocations);
-    } catch (error) {
-      console.error('Error fetching locations:', error);
-      message.error('Could not fetch location suggestions');
-      
-      // Fallback data
-      setLocations([
-        {
-          id: 'place1',
-          name: 'Popular Attraction 1',
-          address: formData.destination,
-          category: 'Attraction',
-          position: [51.505, -0.09],
-          rating: 4.5,
-          photo: 'https://via.placeholder.com/150'
-        },
-        {
-          id: 'place2',
-          name: 'Popular Restaurant',
-          address: formData.destination,
-          category: 'Restaurant',
-          position: [51.51, -0.1],
-          rating: 4.2,
-          photo: 'https://via.placeholder.com/150'
-        },
-        {
-          id: 'place3',
-          name: 'Popular Hotel',
-          address: formData.destination,
-          category: 'Hotel',
-          position: [51.515, -0.08],
-          rating: 4.7,
-          photo: 'https://via.placeholder.com/150'
-        }
-      ]);
-    } finally {
-      setLoading(false);
-    }
-  }, [formData.destination, checkApiKeys]);
+     // Fallback data
+     setLocations([
+       {
+         id: 'place1',
+         name: 'Popular Attraction 1',
+         address: formData.destination,
+         category: 'Attraction',
+         position: [51.505, -0.09],
+         rating: 4.5,
+         photo: 'https://via.placeholder.com/150'       }
+    ]);
+   } finally {
+     setLoading(false);
+   }
+ }, [formData.destination]);
 
   // Generate itinerary
-  const generateItinerary = useCallback(async () => {
-    if (!checkApiKeys()) return; // Check API key before proceeding
-    
+  const generateItinerary = async () => {
+    setLoading(true);
     try {
-      setLoading(true);
+      // Compose prompt for itinerary generation
+      const prompt = `Create a detailed travel itinerary for a trip to ${formData.destination} from ${formData.startDate.format('YYYY-MM-DD')} to ${formData.endDate.format('YYYY-MM-DD')}. The traveler is interested in ${formData.interests.join(', ')} and will be traveling with ${formData.companions}. Preferred transportation is ${formData.transportation}. Additional notes: ${formData.notes || 'None'}. Please provide a day-by-day plan with activities and locations.`;
       
-      // Direct API call to GROQ
-      const response = await axios.post(`${GROQ_API_URL}/chat/completions`, {
-        model: "llama3-70b-8192",
-        messages: [
-          {
-            role: "system",
-            content: "You are a travel planning assistant. Create a detailed day-by-day itinerary based on the user's preferences."
-          },
-          {
-            role: "user",
-            content: `Create a detailed ${duration}-day itinerary for ${formData.destination}. 
-            Travel dates: ${formData.startDate.format('YYYY-MM-DD')} to ${formData.endDate.format('YYYY-MM-DD')}.
-            Transportation: ${formData.transportation}.
-            Traveling as: ${formData.companions}.
-            Interests: ${formData.interests.join(', ')}.
-            Additional notes: ${formData.notes || 'None'}.
-            
-            Format the response as a JSON object with the following structure:
-            {
-              "destination": "City name",
-              "days": [
-                {
-                  "day": 1,
-                  "date": "YYYY-MM-DD",
-                  "activities": [
-                    {
-                      "time": "09:00",
-                      "activity": "Visit attraction",
-                      "description": "Short description",
-                      "category": "sightseeing/food/shopping/etc",
-                      "location": {
-                        "name": "Name of place",
-                        "address": "Address",
-                        "coordinates": [latitude, longitude]
-                      }
-                    }
-                  ]
-                }
-              ]
-            }`
-          }
-        ],
-        temperature: 0.7,
-        max_tokens: 4000
-      }, {
-        headers: {
-          'Authorization': `Bearer ${GROQ_API_KEY}`,
-          'Content-Type': 'application/json'
-        }
-      });
-      
-      // Process the itinerary data
-      let itineraryData;
-      try {
-        const content = response.data.choices[0].message.content;
-        // Extract JSON from the response if needed
-        const jsonMatch = content.match(/```json\n([\s\S]*?)\n```/) || content.match(/\{[\s\S]*\}/);
-        const jsonString = jsonMatch ? jsonMatch[1] || jsonMatch[0] : content;
-        itineraryData = JSON.parse(jsonString);
-      } catch (parseError) {
-        console.error('Error parsing itinerary JSON:', parseError);
-        throw new Error('Could not parse itinerary data');
-      }
-      
-      setItinerary(itineraryData);
-      setCurrentStep(4); // Move to itinerary step
-      message.success('Your personalized itinerary is ready!');
-    } catch (error) {
-      console.error('Error generating itinerary:', error);
-      message.error('Could not generate itinerary');
-      
-      // Fallback itinerary
-      const fallbackItinerary = {
-        destination: formData.destination,
-        days: Array(duration).fill().map((_, i) => ({
-          day: i + 1,
-          date: formData.startDate.add(i, 'day').format('YYYY-MM-DD'),
-          activities: [
-            {
-              time: '09:00',
-              activity: 'Breakfast at local cafe',
-              description: 'Start your day with a delicious breakfast',
-              category: 'food',
-              location: {
-                name: 'Local Cafe',
-                address: formData.destination,
-                coordinates: [51.505, -0.09]
-              }
-            },
-            {
-              time: '11:00',
-              activity: 'Visit main attraction',
-              description: 'Explore the most popular attraction',
-              category: 'sightseeing',
-              location: {
-                name: 'Main Attraction',
-                address: formData.destination,
-                coordinates: [51.51, -0.1]
-              }
-            },
-            {
-              time: '13:30',
-              activity: 'Lunch at recommended restaurant',
-              description: 'Enjoy local cuisine',
-              category: 'food',
-              location: {
-                name: 'Popular Restaurant',
-                address: formData.destination,
-                coordinates: [51.515, -0.08]
-              }
-            },
-            {
-              time: '15:00',
-              activity: 'Afternoon activity',
-              description: 'Relax and enjoy the local atmosphere',
-              category: formData.interests[0] || 'relaxation',
-              location: {
-                name: 'Local Spot',
-                address: formData.destination,
-                coordinates: [51.52, -0.11]
-              }
-            },
-            {
-              time: '19:00',
-              activity: 'Dinner and evening entertainment',
-              description: 'End your day with a nice dinner',
-              category: 'food',
-              location: {
-                name: 'Evening Venue',
-                address: formData.destination,
-                coordinates: [51.525, -0.09]
-              }
-            }
-          ]
-        }))
-      };
-      
-      setItinerary(fallbackItinerary);
-      setCurrentStep(4); // Still move to itinerary step with fallback data
+      // Call backend API to get itinerary
+      const response = await axios.post('http://localhost:5000/plan', { prompt });
+      let rawText = response.data.itinerary || '';
+  
+      // Strip markdown code block markers (``` or ```json)
+      rawText = rawText
+        .replace(/^```(?:json)?\s*/i, '')  // removes ``` or ```json at start
+        .replace(/```$/, '')              // removes ``` at end
+        .trim();
+  
+      // Ensure valid JSON object
+      const firstBrace = rawText.indexOf('{');
+      const lastBrace = rawText.lastIndexOf('}');
+      if (firstBrace === -1 || lastBrace === -1) throw new Error("No valid JSON object found.");
+      const validJson = rawText.slice(firstBrace, lastBrace + 1);
+  
+      // Parse JSON
+      const parsed = JSON.parse(validJson);
+      setItinerary(parsed);
+      setRawResponse(validJson); // optional debug
+    } catch (err) {
+      console.error("JSON Parse Error:", err);
+      message.error("Could not parse the itinerary. Please check the format.");
+      setRawResponse(err.message); // optional debug output
+      setItinerary(null);
     } finally {
       setLoading(false);
     }
-  }, [formData.destination, formData.startDate, formData.endDate, formData.interests, formData.transportation, formData.companions, formData.notes, duration, checkApiKeys]);
+  };
+  
+      let rawText = response.data.itinerary || '';
+  
+  
+        .trim()
+        .trim()
+      let rawText = response.data.itinerary || '';
+  
+
 
   // Effect to fetch weather and locations when search is initiated
   useEffect(() => {
     if (searchInitiated && formData.destination) {
       fetchWeatherData();
-      fetchLocationSuggestions();
+      // fetchLocationSuggestions(); // Removed as per user request
       setSearchInitiated(false);
     }
-  }, [searchInitiated, formData.destination, fetchWeatherData, fetchLocationSuggestions]);
+  }, [searchInitiated, formData.destination, fetchWeatherData]);
 
   // Handle form data changes
   const handleInputChange = (field, value) => {
@@ -408,11 +230,11 @@ const TravelPlanner = () => {
   const handleNext = () => {
     if (currentStep === 3) {
       generateItinerary();
+      setCurrentStep(4);
     } else {
       setCurrentStep(prev => prev + 1);
     }
   };
-
   // Handle previous step
   const handlePrev = () => {
     setCurrentStep(prev => prev - 1);
@@ -467,7 +289,7 @@ const TravelPlanner = () => {
       };
 
       // Call GROQ API directly
-      const response = await axios.post(`${GROQ_API_URL}/chat/completions`, {
+      const response = await axios.post(`${GROQ_API_URL}/groq`, {
         model: "llama3-70b-8192",
         messages: [
           {
@@ -504,7 +326,7 @@ const TravelPlanner = () => {
       });
 
       // Get the response from GROQ
-      const finalResponse = response.data.choices[0].message.content;
+      const finalResponse = response.data.content;
 
       // Add a small delay for a more natural feel
       await new Promise(resolve => setTimeout(resolve, 500));
@@ -613,6 +435,7 @@ const TravelPlanner = () => {
       <Form layout="vertical">
         <Form.Item label="Transportation">
           <Radio.Group 
+            className="travel-mode-group"
             value={formData.transportation}
             onChange={e => handleInputChange('transportation', e.target.value)}
             size="large"
@@ -632,6 +455,7 @@ const TravelPlanner = () => {
         
         <Form.Item label="Who are you traveling with?">
           <Radio.Group 
+            className="companion-group"
             value={formData.companions}
             onChange={e => handleInputChange('companions', e.target.value)}
             size="large"
@@ -713,7 +537,7 @@ const TravelPlanner = () => {
       <Title level={4}>Your Personalized Itinerary for {formData.destination}</Title>
       <Paragraph>Here's your day-by-day plan based on your preferences.</Paragraph>
       
-      {itinerary ? (
+      {itinerary && itinerary.days && Array.isArray(itinerary.days) ? (
         <div className="itinerary-container">
           <Tabs defaultActiveKey="0" tabPosition="left">
             {itinerary.days.map((day, index) => (
@@ -771,6 +595,11 @@ const TravelPlanner = () => {
               <Button onClick={() => printItinerary()} className="print-button">Print</Button>
             </Space>
           </div>
+        </div>
+      ) : rawResponse ? (
+        <div className="raw-itinerary-json" style={{ whiteSpace: 'pre-wrap', backgroundColor: '#f0f0f0', padding: '16px', borderRadius: '8px', marginTop: '16px' }}>
+          <Title level={5}>Raw Itinerary Response (Parsing Failed)</Title>
+          <pre>{rawResponse}</pre>
         </div>
       ) : (
         <div className="loading-container" style={{ textAlign: 'center', padding: '40px' }}>
@@ -881,7 +710,8 @@ const TravelPlanner = () => {
         </div>
       )}
       
-      {locations.length > 0 && (
+      {/* Suggested locations removed as per user request */}
+      {/* {locations.length > 0 && (
         <div className="map-container">
           <div style={{ marginBottom: '1rem', fontWeight: 'bold', fontSize: '1.1rem' }}>
             <CompassOutlined style={{ marginRight: '0.5rem' }} />
@@ -897,7 +727,7 @@ const TravelPlanner = () => {
             />
           </div>
         </div>
-      )}
+      )} */}
 
       <div className="trip-summary-card">
         <h2>Trip Summary</h2>
@@ -976,7 +806,7 @@ const TravelPlanner = () => {
           className="chat-modal"
           width={400}
           style={{ top: 20 }}
-          bodyStyle={{ padding: 0, height: '500px', display: 'flex', flexDirection: 'column' }}
+          styles={{ body: { padding: 0, height: '500px', display: 'flex', flexDirection: 'column' } }}
         >
           <div className="chat-messages">
             {helpMessages.length === 0 ? (
@@ -1047,7 +877,7 @@ const TravelPlanner = () => {
       <div className="travel-planner-layout">
         {/* Main content area */}
         <div className="planner-main">
-          <div className="step-card" style={{ backgroundColor: '#333333', borderRadius: '12px', padding: '1.5rem' }}>
+<div className="step-card" style={{ borderRadius: '12px', padding: '1.5rem' }}>
             {loading && currentStep !== 4 ? (
               <div className="loading-container" style={{ textAlign: 'center', padding: '40px' }}>
                 <Spin size="large" />
@@ -1076,7 +906,7 @@ const TravelPlanner = () => {
                     type="primary" 
                     onClick={handleNext}
                     disabled={!isStepValid()}
-                    className="next-button"
+                    className={`next-button${currentStep === 3 ? ' generate-itinerary-button' : ''}`}
                   >
                     {currentStep === 3 ? 'Generate Itinerary' : 'Next'}
                   </Button>
