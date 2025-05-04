@@ -268,13 +268,8 @@ def get_groq_response(messages: List[Dict[str, str]]) -> Dict[str, Any]:
         if "choices" in data and len(data["choices"]) > 0:
             content = data["choices"][0]["message"]["content"]
             logger.info("GROQ response received successfully")
-            try:
-                # Try to parse content as JSON
-                parsed_content = json.loads(content)
-                return {"success": True, "content": parsed_content}
-            except json.JSONDecodeError:
-                # Return raw content if JSON parsing fails
-                return {"success": True, "content": content}
+            # Always return the raw content string - let the frontend handle any JSON parsing
+            return {"success": True, "content": content}
         else:
             logger.error(f"No content received from GROQ API: {data}")
             return {"success": False, "error": "No response content received from GROQ API"}
